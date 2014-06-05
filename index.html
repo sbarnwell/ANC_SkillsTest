@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Graffiti Reports Dashboard</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="description" content="" />
+<link rel="stylesheet" type="text/css" href="css/kickstart.css" media="all" />
+<link rel="stylesheet" type="text/css" href="style.css" media="all" /> 
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+<script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false&libraries=visualization"></script>
+<script type="text/javascript" src="http://momentjs.com/downloads/moment.min.js"></script>
+<script type="text/javascript" src="js/kickstart.js"></script>      
+<script>
+if (window.XMLHttpRequest)
+{
+xmlhttp=new XMLHttpRequest();
+}
+else
+{
+xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+}
+var afterTimestamp = "1364330525";
+var beforeTimestamp = "1401992639";
+xmlhttp.open("GET","https://www.publicstuff.com/api/2.0/requests_list?return_type=xml&request_type_id=11339&&after_timestamp=" + afterTimestamp + "&before_timestamp=" + beforeTimestamp + "&limit=1000&api_key=58j013k159vpqz87xd85df0uy7epvl",false);
+xmlhttp.send();
+xmlDoc=xmlhttp.responseXML; 
+var map,heatmap,pointArray,marker;
+var heat_points = [];
+var infowindow = null;
+var image = { url: 'img/SprayCan-icon2.png', size: new google.maps.Size(25, 25),};
+/* Begin Initialize */
+function initialize() {
+var mapOptions = {
+zoom: 12,
+center: new google.maps.LatLng(35.5800, -82.5558)
+};
+map = new google.maps.Map(document.getElementById('map-canvas'),mapOptions);
+var markers = xmlDoc.documentElement.getElementsByTagName("request");
+
+infowindow = new google.maps.InfoWindow({
+content: "loading..."
+});
+
+/* Begin Loop */
+for (var i = 0; i < markers.length; i++) {
+var getidcontent = markers[i].getElementsByTagName("id")[0];
+if (getidcontent.childNodes.length) {
+var idcontent = getidcontent.childNodes[0].nodeValue
+} else {
+idcontent = ""
+}
+var getdescriptioncontent = markers[i].getElementsByTagName("description")[0];
+if (getdescriptioncontent.childNodes.length) {
+var descriptioncontent = getdescriptioncontent.childNodes[0].nodeValue
+} else {
+descriptioncontent = ""
+}
+var getaddresscontent = markers[i].getElementsByTagName("address")[0];
+if (getaddresscontent.childNodes.length) {
+var addresscontent = getaddresscontent.childNodes[0].nodeValue
+} else {
+addresscontent = ""
+}
+var getdate_createdcontent = markers[i].getElementsByTagName("date_created")[0];
+if (getdate_createdcontent.childNodes.length) {
+var date_createdcontent = getdate_createdcontent.childNodes[0].nodeValue
+var date_createdcontent_formated = moment.unix(date_createdcontent).format("MM/DD/YYYY");
+} else {
+date_createdcontent = ""
+var date_createdcontent_formated = ""
+}
+var getimage_thumbnailcontent = markers[i].getElementsByTagName("image_thumbnail")[0];
+if (getimage_thumbnailcontent.childNodes.length) {
+var image_thumbnailcontent = getimage_thumbnailcontent.childNodes[0].nodeValue
+} else {
+image_thumbnailcontent = ""
+}
+var infoload = "<b>Report ID: "+idcontent+"</b><br /><b>"+addresscontent+"</b><br /><i>Reported on "+date_createdcontent_formated+"</i><br />"+descriptioncontent+"<br /><a href='http://maps.google.com/maps?q=&layer=c&cbll="+latcheck+","+loncheck+"'>View in Street View</a>"
+var getlat = markers[i].getElementsByTagName("lat")[0];
+var lat = parseFloat(getlat.childNodes[0].nodeValue);
+var getlon = markers[i].getElementsByTagName("lon")[0];
+var lng = parseFloat(getlon.childNodes[0].nodeValue);
+var point = new google.maps.LatLng(lat, lng);
+var infoload = "<b>Report ID: "+idcontent+"</b><br /><b>"+addresscontent+"</b><br /><i>Reported on "+date_createdcontent_formated+"</i><br />"+descriptioncontent+"<br /><a href='http://maps.google.com/maps?q=&layer=c&cbll="+lat+","+lng+"'>View in Street View</a><br /><img src='"+image_thumbnailcontent+"' width='200' height='auto'/>"
+heat_points.push(point);
+var marker = new google.maps.Marker({
+position: point,
+map: map,
+icon: image,
+html: (infoload)
+});
+console.log(infoload)
+google.maps.event.addListener(marker, "click", function () {
+infowindow.setContent(this.html);
+infowindow.open(map, this);
+            });
+}/* End Loop */
+
+
+pointArray = new google.maps.MVCArray(heat_points);
+heatmap = new google.maps.visualization.HeatmapLayer({
+data: pointArray
+});
+heatmap.setMap(map);
+heatmap.set('radius', 30);
+function clearMarkers() {
+  setAllMap(null);
+}
+
+}/* End Initialize */
+google.maps.event.addDomListener(window, 'load', initialize);
+
+</script>
+</head>
+<body>
+<div class="grid">
+<div class="wrapper">
+<div class="col_12">
+<h2>Graffiti Reports Dashboard</h2>
+<script>
+var AfterdateString = moment.unix(afterTimestamp).format("MM/DD/YYYY");
+var BeforedateString = moment.unix(beforeTimestamp).format("MM/DD/YYYY");
+var getresponse=xmlDoc.getElementsByTagName("response");
+var getcount = getresponse[0].getElementsByTagName("count")[0].childNodes[0].nodeValue;
+document.write("<h5><span style='color:red;'>" + getcount + "</span> Reports of graffiti from "+ AfterdateString +" to "+ BeforedateString +"</h5>");
+</script>
+<div class="notice warning"><i class="icon-warning-sign icon-large"></i> At this time, the above date range is can be changed on lines 23 &amp; 24 at varibles "afterTimestamp" &amp; "beforeTimestamp"
+<a href="#close" class="icon-remove"></a></div>
+<div id="map-canvas"></div>
+<script>
+function toggleHeatmap() {
+heatmap.setMap(heatmap.getMap() ? null : map);
+}
+</script>
+<button style="float:right;margin-top:25px;margin-bottom:25px;" class="small red" onclick="toggleHeatmap()">Show/Hide Heatmap</button>
+
+<script>
+document.write("<table class='striped'><thead><tr><th>Report ID</th><th>Date</th><th>Report Description</th><th>Address</th><th>Image</th><th>Street View</th></tr></thead><tbody>");
+var x=xmlDoc.getElementsByTagName("request");
+for (i=0;i<x.length;i++)
+{ 
+document.write("<tr><td>");
+checkNode=x[i].getElementsByTagName("id")[0];	
+if (checkNode.childNodes.length) {
+check = checkNode.childNodes[0].nodeValue;
+document.write(check);
+} else {
+check = ""
+document.write(check);
+}
+document.write("</td><td>");
+var timestamp = x[i].getElementsByTagName("date_created")[0].childNodes[0].nodeValue;
+var dateString = moment.unix(timestamp).format("MM/DD/YYYY");
+document.write(dateString);
+document.write("</td><td>");
+checkNode=x[i].getElementsByTagName("description")[0];	
+if (checkNode.childNodes.length) {
+check = checkNode.childNodes[0].nodeValue;
+document.write(check);
+} else {
+check = ""
+document.write(check);
+}
+document.write("</td><td>");
+checkNode=x[i].getElementsByTagName("address")[0];	
+if (checkNode.childNodes.length) {
+check = checkNode.childNodes[0].nodeValue;
+document.write(check);
+} else {
+check = ""
+document.write(check);
+}
+document.write("<br /> ");
+checkNode=x[i].getElementsByTagName("location")[0];	
+if (checkNode.childNodes.length) {
+check = checkNode.childNodes[0].nodeValue;
+document.write(check);
+} else {
+check = ""
+document.write(check);
+}
+document.write(" ");
+checkNode=x[i].getElementsByTagName("zipcode")[0];	
+if (checkNode.childNodes.length) {
+check = checkNode.childNodes[0].nodeValue;
+document.write(check);
+} else {
+check = ""
+document.write(check);
+}
+document.write("</td><td>");
+checkNode=x[i].getElementsByTagName("image_thumbnail")[0];	
+if (checkNode.childNodes.length) {
+check = checkNode.childNodes[0].nodeValue;
+document.write("<div class='gallery'><a href='");
+document.write(check);
+document.write("'><img src='");
+document.write(check);
+document.write("' width='250' height='250' /></a>");
+} else {	
+check = ""
+document.write(check);
+}
+document.write("</td><td>");
+checkNode=x[i].getElementsByTagName("lat")[0];	
+if (checkNode.childNodes.length) {
+latcheck = checkNode.childNodes[0].nodeValue;
+} else {	
+latcheck = ""
+}
+checkNode=x[i].getElementsByTagName("lon")[0];	
+if (checkNode.childNodes.length) {
+loncheck = checkNode.childNodes[0].nodeValue;
+} else {	
+loncheck = ""
+}
+document.write("<a href='http://maps.google.com/maps?q=&layer=c&cbll="+latcheck+","+loncheck+"'><button class='small blue'>Street View</button></a>");
+document.write("</td></tr></tbody>");
+}
+document.write("</table>");
+</script>
+</div>
+</div>
+</div> <!-- End Grid -->
+</body>
+</html>
